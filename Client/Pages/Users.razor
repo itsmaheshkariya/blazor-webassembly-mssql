@@ -1,0 +1,73 @@
+@page "/"
+@using BlazorSql.Shared
+@inject HttpClient Http
+
+<div class="row">
+    <div class="col-lg-6">
+        <input class="form-control mb-3" @bind-value="newUser.Name"  placeholder="Enter Name"/>
+        <input class="form-control mb-3" @bind-value="newUser.Email"  placeholder="Enter Email"/>
+        <input class="form-control mb-3" @bind-value="newUser.Password"  placeholder="Enter Password"/>
+        <button class="btn btn-primary btn-block" @onclick="SubmitUser">Submit</button>
+    </div>
+    <div class="col-lg-6">
+
+@if(users == null){
+    <p>Sorry you dont have Suff. Data</p>
+}else{
+        <table class="table table-responsive">
+            <tr>
+                <td>Id</td>
+                <td>Name</td>
+                <td>Email</td>
+                <td>Password</td>
+                <td>Edit</td>
+                <td>Delete</td>
+            </tr>
+            @foreach(var user in users){
+                    <tr>
+                        <td>@user.Id</td>
+                        <td>@user.Name</td>
+                        <td>@user.Email</td>
+                        <td>@user.Password</td>
+                         <td>
+                            <button class="btn btn-primary btn-sm" @onclick="@(()=>GetUser(@user.Id))">Edit</button>
+                         </td>
+                        <td>
+                          <button class="btn btn-primary btn-sm" @onclick="@(()=>DeleteUser(@user.Id))">Delete</button>
+                          </td>
+                    </tr>
+            }
+        </table>
+
+}
+        </div>
+    </div>
+@code{
+    private User[] users;
+    private User newUser = new User();
+    private bool edit = false;
+
+    protected override async Task OnInitializedAsync(){
+        users = await Http.GetFromJsonAsync<User[]>("user");
+    }
+    private async Task SubmitUser(){
+        if(edit == false){
+            await Http.PostAsJsonAsync("user",newUser);
+            await OnInitializedAsync();
+            newUser = new User();
+        }else{
+            await Http.PutAsJsonAsync("user/"+newUser.Id.ToString(),newUser);
+            await OnInitializedAsync();
+            newUser = new User();
+            edit = false;
+        }
+    }
+    private async Task GetUser(int id){
+        newUser = await Http.GetFromJsonAsync<User>("user/"+id.ToString());
+        edit = true;
+    }
+    private async Task DeleteUser(int id){
+        await Http.DeleteAsync("user/"+id.ToString());
+        await OnInitializedAsync();
+    }
+}
